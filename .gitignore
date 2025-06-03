@@ -10,3 +10,4 @@ cimples_compiler
 # Debug files
 *.dSYM/
 *.exe
+cimples_compiler.dSYM/Contents/Resources/DWARF/cimples_compiler
