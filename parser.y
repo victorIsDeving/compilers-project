@@ -53,6 +53,10 @@ void yyerror(const char* s) {
     char* str;
     int num;
     float fnum;
+    struct {
+        char* start;
+        char* end;
+    } loop_labels;
 }
 
 %token <str> ID
@@ -68,6 +72,8 @@ void yyerror(const char* s) {
 
 %type <str> expr term factor
 %type <str> type 
+%type <loop_labels> while_start_action 
+%type <str> while_stmt 
 
 %left PLUS MINUS
 %left MULT DIV
@@ -141,14 +147,22 @@ if_stmt:
     ;
 
 while_stmt:
-    WHILE LPAREN expr RPAREN LBRACE stmt_list RBRACE
+    WHILE LPAREN while_start_action expr RPAREN LBRACE 
     {
-        char* start = new_label();
-        char* end = new_label();
-        gen_code("LABEL", start, "", "");
-        gen_code("IF_FALSE", $3, "", end);
-        gen_code("GOTO", start, "", "");
-        gen_code("LABEL", end, "", "");
+        gen_code("IF_FALSE", $4, "", $3.end);
+    }
+    stmt_list RBRACE
+    {
+        gen_code("GOTO", $3.start, "", ""); 
+        gen_code("LABEL", $3.end, "", "");
+    }
+    ;
+
+while_start_action:
+    {
+        $$.start = new_label();
+        $$.end = new_label();
+        gen_code("LABEL", $$.start, "", "");
     }
     ;
 
