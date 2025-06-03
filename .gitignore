@@ -1,0 +1,12 @@
+# bison compile files
+/parser.tab.*
+
+# flex compile files
+/lex.yy.c
+
+# compiler generated
+cimples_compiler
+
+# Debug files
+*.dSYM/
+*.exe
