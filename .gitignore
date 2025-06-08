@@ -11,3 +11,8 @@ cimples_compiler
 *.dSYM/
 *.exe
 cimples_compiler.dSYM/Contents/Resources/DWARF/cimples_compiler
+
+# Latex files
+artigo-projeto-final/*
+!artigo-projeto-final/proposta.tex
+!artigo-projeto-final/style/
