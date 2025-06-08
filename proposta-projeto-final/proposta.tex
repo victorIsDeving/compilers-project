@@ -1,0 +1,191 @@
+\documentclass[10pt, a4paper]{article} 
+\input{head}
+\graphicspath{ {./resources/} }
+
+\begin{document}
+
+\fancyhead[C]{}
+\hrule \medskip 
+\begin{minipage}{0.295\textwidth} 
+    \raggedright
+    \footnotesize
+    Victor Augusto Costa Monteiro \hfill\\   
+    % NºUSP 8942937 \hfill\\
+    victor.augusto.monteiro@usp.br
+\end{minipage}
+\begin{minipage}{0.4\textwidth} 
+    \centering 
+    \large 
+    Proposta de Projeto Final\\ 
+    \normalsize 
+    Linguagens e Compiladores\\CPGEI IN0018 e PPGCA CAES101\\ 
+\end{minipage}
+\begin{minipage}{0.295\textwidth} 
+    \raggedleft
+    \today\hfill\\
+\end{minipage}
+\medskip\hrule 
+
+\section{Descrição do Projeto}
+
+O objetivo deste projeto é desenvolver um compilador completo para uma linguagem 
+de programação chamada \textbf{Cimples} (C Simplified), que segue a sintaxe e 
+semântica básica da linguagem C, porém com recursos simplificados.
+
+O compilador será implementado usando Flex para análise léxica, Bison para 
+análise sintática, e irá gerar código intermediário em formato de 
+três endereços. O projeto incluirá todas as fases de compilação exigidas: 
+análise léxica, sintática, semântica e geração de código.
+
+A princípio o trabalho será desenvolvido para o Conceito C de avaliação. 
+Após o término de um conceito eu vou passar para o seguinte. 
+Irei conceito a conceito conforme minha disponibilidade de tempo 
+para trabalharno projeto, dado que já trabalho e estou cursando 
+algumas outras matérias também.
+
+
+\section{Linguagem Fonte - Cimples}
+
+A linguagem Cimples terá a seguinte gramática BNF:
+
+\begin{verbatim}
+    <program> ::= <declaration-list>
+
+    <declaration-list> ::= <declaration> | <declaration-list> <declaration>
+
+    <declaration> ::= <var-declaration> 
+
+    <var-declaration> ::= <type-specifier> IDENTIFIER ";" 
+    | <type-specifier> IDENTIFIER "[" NUMBER "]" ";"
+
+    <type-specifier> ::= "int" | "float" | "char"
+
+    <compound-stmt> ::= "{" <local-declarations> <statement-list> "}"
+
+    <local-declarations> ::= <empty> | <local-declarations> <var-declaration>
+
+    <statement-list> ::= <empty> | <statement-list> <statement>
+
+    <statement> ::= <expression-stmt> 
+    | <selection-stmt> 
+    | <compound-stmt> 
+    | <return-stmt> 
+    | <iteration-stmt> 
+    | <io-stmt>
+
+    <expression-stmt> ::= <expression> ";" | ";"
+
+    <selection-stmt> ::= "if" "(" <expression> ")" <statement> 
+    | "if" "(" <expression> ")" <statement> "else" <statement>
+
+    <iteration-stmt> ::= "while" "(" <expression> ")" <statement>
+    | "for" "(" <expression> ";" <expression> ";" <expression> ")" <statement>
+
+    <return-stmt> ::= "return" ";" | "return" <expression> ";"
+
+    <io-stmt> ::= "read" "(" IDENTIFIER ")" ";" | "write" "(" <expression> ")" ";"
+
+    <expression> ::= <var> "=" <expression> | <simple-expression>
+
+    <var> ::= IDENTIFIER | IDENTIFIER "[" <expression> "]"
+
+    <simple-expression> ::= <additive-expression> 
+    | <simple-expression> <relop> <additive-expression>
+
+    <relop> ::= "<=" | "<" | ">" | ">=" | "==" | "!="
+
+    <additive-expression> ::= <term> 
+    | <additive-expression> <addop> <term>
+
+    <addop> ::= "+" | "-"
+
+    <term> ::= <factor> | <term> <mulop> <factor>
+
+    <mulop> ::= "*" | "/"
+
+    <factor> ::= "(" <expression> ")" | <var> | NUMBER | STRING | CHAR
+
+\end{verbatim}
+
+\section{Características da Linguagem}
+
+A linguagem Cimples incluirá:
+
+\begin{itemize}
+    \item Três tipos de variáveis: \texttt{int}, \texttt{float} e \texttt{char}
+    \item Comandos de escrita (\texttt{write}) e leitura (\texttt{read})
+    \item Estrutura de decisão: \texttt{if-else}
+    \item Estruturas de repetição: \texttt{while} e \texttt{for}
+    \item Declaração de funções com parâmetros e valor de retorno
+    \item Arrays unidimensionais
+    \item Expressões aritméticas e lógicas
+\end{itemize}
+
+\section{Linguagem Alvo}
+
+O compilador irá gerar código intermediário em \textbf{três endereços}, 
+que pode ser posteriormente traduzido para código de máquina ou outra 
+linguagem de alto nível. O formato básico do código de três endereços será:
+
+\begin{verbatim}
+    x = y op z
+    if x relop y goto L
+    L:
+    param x
+    call f, n
+\end{verbatim}
+
+\section{Componentes do Compilador}
+
+O compilador será composto pelos seguintes módulos:
+
+\begin{enumerate}
+    \item \textbf{Analisador Léxico}: 
+    Implementado em Flex, responsável por reconhecer os tokens da linguagem
+    \item \textbf{Analisador Sintático}: 
+    Implementado em Bison, responsável por validar a estrutura do programa
+    \item \textbf{Analisador Semântico}: 
+    Responsável por verificação de tipos e outras regras contextuais
+    \item \textbf{Gerador de Código}: 
+    Responsável por produzir o código em três endereços
+    \item \textbf{Tabela de Símbolos}: 
+    Estrutura para armazenar informações sobre identificadores
+\end{enumerate}
+
+\section{Previsões de expansão para os conceitos subsequentes}
+
+Para o Conceito B, as principais adições previstas na gramática serão:
+\begin{verbatim}
+    <var-declaration> ::= <type-specifier> IDENTIFIER ";" 
+    | <type-specifier> IDENTIFIER "[" NUMBER "]" "[" NUMBER "]" ";"
+    | <type-specifier> IDENTIFIER "[" NUMBER "]" ";" 
+
+    <var> ::= IDENTIFIER 
+    | IDENTIFIER "[" <expression> "]" "[" <expression> "]"
+    | IDENTIFIER "[" <expression> "]" 
+
+    <selection-stmt> ::= "if" "(" <expression> ")" <statement> 
+    | "switch" "(" <expression> ")" "{" <case-list> "}"
+    | "if" "(" <expression> ")" <statement> "else" <statement>
+
+    <case-list> ::= <case> <case-list> | <case>
+    <case> ::= "case" <constant> ":" <statement-list> 
+    | "default" ":" <statement-list>
+    
+    <iteration-stmt> ::= "while" "(" <expression> ")" <statement>
+    | "repeat" <statement-list> "until" "(" <expression> ")" ";"
+    | "for" "(" <expression> ";" <expression> ";" <expression> ")" <statement>
+\end{verbatim}
+
+Para o Conceito A as adições previstas subsquentes, além das implementações léxicas, serão:
+\begin{verbatim}
+    <param> ::= <type-specifier> IDENTIFIER 
+    | <type-specifier> IDENTIFIER "[" "]" 
+    | "ref" <type-specifier> IDENTIFIER 
+
+    <expression> ::= ...
+    | "alloc2D" "(" <type-specifier> "," <expression> "," <expression> ")" 
+    | "alloc" "(" <type-specifier> "," <expression> ")" 
+\end{verbatim}
+
+\end{document}
