@@ -1,0 +1,487 @@
+\documentclass[10pt,twocolumn]{article}
+
+% Packages
+\usepackage[utf8]{inputenc}
+\usepackage[portuguese]{babel}
+\usepackage[a4paper, margin=0.8in]{geometry}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{abstract}
+\usepackage{listings}
+\usepackage{lipsum} % For dummy text, remove in your actual document
+\usepackage[labelfont=bf]{caption}
+\usepackage{hyperref}
+\usepackage{xcolor}
+
+\lstset{
+    basicstyle=\ttfamily\footnotesize,
+    breaklines=true,
+    backgroundcolor=\color{white},
+    frame=none,
+    language=C,
+    numbers=none,
+    xleftmargin=0cm,
+    xrightmargin=0cm,
+    aboveskip=0em,
+    belowskip=0em,
+    escapeinside={(*}{*)}
+}
+
+\title{\textbf{CIMPLES: A Didactic Compiler for a C-Subset Language}}
+\author{
+    Victor Augusto Costa Monteiro
+}
+\date{\today}
+
+% Custom abstract environment for two-column abstract
+\renewcommand{\abstractnamefont}{\normalfont\large\bfseries}
+\renewcommand{\abstracttextfont}{\normalfont}
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+    Este artigo apresenta o CIMPLES, um compilador didático para um subconjunto 
+    simplificado da linguagem C, desenvolvido para o trabalho final da disciplina
+    Linguagens e Compiladores(CPGEI IN0018/PPGCA CAES101), ministrada pelos Profs. Drs.
+    João Fabro e Jean Simão. O compilador 
+    implementa todas as fases principais de compilação: análise léxica (usando Flex), 
+    análise sintática (usando Bison), análise semântica e geração de código 
+    intermediário no formato Three-Address Code (TAC). A linguagem implementada 
+    suporta construções básicas do C, incluindo declarações de variáveis, expressões 
+    aritméticas, estruturas de controle (if-else, while) e operações de entrada/saída. 
+    A arquitetura do compilador demonstra aplicações práticas de conceitos teóricos 
+    de linguagens formais, mantendo uma simplicidade adequada para o ensino de 
+    construção de compiladores. O artigo detalha a implementação de cada fase de 
+    compilação e apresenta resultados de testes que validam a funcionalidade do 
+    compilador. A implementação completa serve como referência acessível para 
+    estudantes aprendendo princípios de projeto de compiladores.
+
+    \textbf{Palavras-chave:} Construção de Compiladores, Ferramentas Educacionais, Programação em C, Análise Léxica, Análise Sintática, Geração de Código
+\end{abstract}
+
+\section{Introduction}
+    O objetivo deste projeto é desenvolver um compilador completo para uma linguagem 
+    de programação chamada \textbf{CIMPLES} (C Simplified), que segue a sintaxe e 
+    semântica básica da linguagem C, porém com recursos simplificados.
+
+    O compilador foi implementado usando Flex para análise léxica, Bison para 
+    análise sintática, e irá gerar código intermediário em formato de 
+    três endereços. O projeto incluirá todas as fases de compilação exigidas: 
+    análise léxica, sintática, semântica e geração de código.
+
+\section{Análise Léxica}
+    A análise léxica no compilador Cimples é implementada através do arquivo 
+    \texttt{lexer.l}, utilizando a ferramenta Flex. Esta fase é responsável por 
+    identificar os \textit{tokens} da linguagem e eliminar elementos irrelevantes 
+    como espaços em branco e comentários.
+
+    \subsection{Componentes Principais}
+
+        O analisador léxico possui três partes essenciais:
+
+        \begin{itemize}
+            \item \textbf{Definições}: Inclusão de bibliotecas e configurações do Flex
+            \item \textbf{Regras de tradução}: Padrões regex associados a ações
+            \item \textbf{Funções auxiliares}: Código C adicional (não utilizado nesta versão)
+        \end{itemize}
+
+    \subsection{Implementação dos Tokens}
+
+        As principais regras de identificação incluem:
+
+        \begin{lstlisting}[caption=Regras de tipo de dado,captionpos=b]
+            "int" { return INT; }
+            "float" { return FLOAT; }
+            "char" { return CHAR; }
+        \end{lstlisting}
+
+        Para identificadores e literais, o lexer utiliza:
+
+        \begin{lstlisting}[caption=Construção para nome de variáveis e valores,captionpos=b]
+            [a-zA-Z][a-zA-Z0-9]* {
+            yylval.str = strdup(yytext);
+            return ID;
+            }
+            [0-9]+ {
+            yylval.num = atoi(yytext);
+            return NUM;
+            }
+        \end{lstlisting}
+
+\section{Análise Sintática}
+        A análise sintática é realizada por um parser \textit{shift-reduce} implementado 
+        com Bison no arquivo \textit{parser.y}. A gramática define a linguagem CIMPLES e 
+        gera código intermediário em formato TAC (\textit{Three-Address Code}).
+
+    \subsection{Regras Gramaticais}
+        A gramática é composta pelas seguintes regras principais:
+        \begin{itemize}
+            \item \textbf{Programa}: Define a estrutura básica do programa com a função \texttt{main()}.
+            \begin{lstlisting}[caption=Estrutra do programa,captionpos=b]
+    program:
+        MAIN LPAREN RPAREN LBRACE stmt_list RBRACE
+            \end{lstlisting}
+
+            \item \textbf{Lista de Comandos}: Permite sequências de comandos.
+            \begin{lstlisting}[caption=Sequência de comandos,captionpos=b]
+    stmt_list:
+        stmt_list stmt
+        | stmt
+            \end{lstlisting}
+
+            \item \textbf{Comandos}: Define os diferentes tipos de comandos da linguagem.
+            \begin{lstlisting}[caption=Definição de comandos,captionpos=b]
+    stmt:
+        decl_stmt
+        | assign_stmt
+        | if_stmt
+        | while_stmt
+        | read_stmt
+        | write_stmt
+            \end{lstlisting}
+        \end{itemize}
+    
+    \subsection{Declarações e Atribuições}
+
+        \begin{itemize}
+            \item \textbf{Declaração de Variáveis}: Suporta declarações com e sem inicialização.
+            \begin{lstlisting}[caption=Declaração de variável,captionpos=b]
+    decl_stmt:
+        type ID SEMICOLON
+        | type ID ASSIGN expr SEMICOLON
+            \end{lstlisting}
+
+            \item \textbf{Tipos}: Suporta três tipos primitivos.
+            \begin{lstlisting}[caption=Tipos de variável,captionpos=b]
+    type:
+        INT
+        | FLOAT
+        | CHAR
+            \end{lstlisting}
+
+            \item \textbf{Atribuição}: Atribuição simples de valores.
+            \begin{lstlisting}[caption=Atribuição,captionpos=b]
+    assign_stmt:
+        ID ASSIGN expr SEMICOLON
+            \end{lstlisting}
+        \end{itemize}   
+    
+    \subsection{Estruturas de Controle}
+
+        \begin{itemize}
+            \item \textbf{Condicional}: Implementa \texttt{if} com e sem \texttt{else}.
+            \begin{lstlisting}[caption=Estrutura condicional,captionpos=b]
+    if_stmt:
+        IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
+        | IF LPAREN expr RPAREN LBRACE stmt_list RBRACE 
+        ELSE LBRACE stmt_list RBRACE
+            \end{lstlisting}
+
+            \item \textbf{Loop While}: Implementa controle de fluxo com labels.
+            \begin{lstlisting}[caption=Estrutura de repetição,captionpos=b]
+    while_stmt:
+        WHILE LPAREN while_start_action expr RPAREN LBRACE 
+        stmt_list RBRACE
+            \end{lstlisting}
+
+            \item \textbf{Ação do While}: Gera labels para controle de fluxo, assim a 
+            geração de código ocorre na forma correta.
+            \begin{lstlisting}[caption=Estrutura de repetição,captionpos=b]
+    while_start_action:
+        {
+            $$.start = new_label();
+            $$.end = new_label();
+            gen_code("LABEL", $$.start, "", "");
+        }
+            \end{lstlisting}
+        \end{itemize}
+    
+    \subsection{Entrada/Saída}
+
+        \begin{itemize}
+            \item \textbf{Leitura}: Comando \texttt{read}.
+            \begin{lstlisting}[caption=Comando de leitura,captionpos=b]
+    read_stmt:
+        READ LPAREN ID RPAREN SEMICOLON
+            \end{lstlisting}
+
+            \item \textbf{Escrita}: Comando \texttt{write}.
+            \begin{lstlisting}[caption=Comando de escrita,captionpos=b]
+    write_stmt:
+        WRITE LPAREN expr RPAREN SEMICOLON
+            \end{lstlisting}
+        \end{itemize}
+    
+    \subsection{Expressões}
+
+        As expressões seguem a precedência padrão de operadores:
+
+        \begin{itemize}
+            \item \textbf{Expressões Relacionais}: \texttt{==}, \texttt{!=}, \texttt{<}, \texttt{>}
+            \begin{lstlisting}[caption=Expressões comparativas,captionpos=b]
+    expr:
+        expr EQ expr
+        | expr NE expr
+        | expr LT expr
+        | expr GT expr
+            \end{lstlisting}
+
+            \item \textbf{Expressões Aritméticas}: \texttt{+}, \texttt{-}, \texttt{*}, \texttt{/}
+            \begin{lstlisting}[caption=Expressões aritméticas,captionpos=b]
+    expr:
+        expr PLUS term
+        | expr MINUS term
+        | term
+
+    term:
+        term MULT factor
+        | term DIV factor
+        | factor
+            \end{lstlisting}
+
+            \item \textbf{Fatores}: Elementos básicos das expressões.
+            \begin{lstlisting}[caption=Estrutura de expressões,captionpos=b]
+    factor:
+        ID
+        | NUM
+        | FNUM
+        | CNUM
+        | LPAREN expr RPAREN
+            \end{lstlisting}
+        \end{itemize}
+
+\section{Análise Semântica}
+    A análise semântica no arquivo \texttt{parser.y} é responsável por verificar a 
+    correta utilização da linguagem e gerar o \textit{Three-Address Code} (TAC). 
+    Ele realiza as seguintes ações semânticas:
+
+    \subsection{Geração de Código Intermediário (TAC)}
+        O parser gera código TAC para cada construção da linguagem, utilizando a estrutura:
+        
+        \begin{lstlisting}[caption=Estrutura para geração de código,captionpos=b]
+    typedef struct {
+        char op[10]; 
+        char arg1[20];   
+        char arg2[20]; 
+        char result[20];
+    } TAC;
+        \end{lstlisting}
+    
+    \subsubsection{Regras de Geração de Código}
+
+        \begin{itemize}
+            \item \textbf{Declaração de Variáveis}:
+            \begin{lstlisting}[caption=Captura de variáveis,captionpos=b]
+    decl_stmt:
+        type ID SEMICOLON 
+        { gen_code("DECL", $1, "", $2); }
+            \end{lstlisting}
+
+            \item \textbf{Atribuição}:
+            \begin{lstlisting}[caption=Atribuição de variáveis,captionpos=b]
+    assign_stmt: 
+        ID ASSIGN expr SEMICOLON
+        { gen_code("=", $3, "", $1); }
+            \end{lstlisting}
+
+            \item \textbf{Operações Aritméticas}:
+            \begin{lstlisting}[caption=Operações aritméticas,captionpos=b]
+    expr PLUS expr 
+        { $$ = new_temp(); gen_code("+", $1, $3, $$); }
+            \end{lstlisting}
+
+            \item \textbf{Estruturas de Controle}:
+            \begin{lstlisting}[caption=Estruturas de controle,captionpos=b]
+    if_stmt:
+        IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
+        {
+            char* label = new_label();
+            gen_code("IF", $3, "", label);
+            gen_code("LABEL", label, "", "");
+        }
+            \end{lstlisting}
+        \end{itemize}
+
+\section{Geração de código}
+
+    A gramática constroi uma fila de de execuções realizadas no formato TAC
+    que é posteriormente impressa na tela para mostrar a execução do código inserido.
+    
+    \begin{lstlisting}[caption=Geração de código para a fila e impressão,captionpos=b]
+    TAC code[200];
+    int code_count = 0;
+    int temp_count = 0;
+    int label_count = 0;
+
+    void gen_code(char* op, char* arg1, char* arg2, char* res) {
+        strcpy(code[code_count].op, op);
+        strcpy(code[code_count].arg1, arg1 ? arg1 : "");
+        strcpy(code[code_count].arg2, arg2 ? arg2 : "");
+        strcpy(code[code_count].result, res ? res : "");
+        code_count++;
+    }
+
+    void print_code() {
+        for (int i = 0; i < code_count; i++) {
+            printf("%d: %s %s %s %s\n", i, 
+                    code[i].op, code[i].arg1, code[i].arg2, code[i].result);
+        }
+    }
+    \end{lstlisting}
+
+\section{Compilação}
+    O compilador \texttt{CIMPLES} pode ser construído utilizando um script Bash que 
+    automatiza o processo com as seguintes etapas:
+
+    \begin{lstlisting}[caption=Arquivo \textit{bash} para o build,captionpos=b]
+    #!/bin/bash
+
+    bison -d parser.y -o parser.tab.c || { echo "Bison failed"; exit 1; }
+    flex lexer.l || { echo "Flex failed"; exit 1; }
+    gcc parser.tab.c lex.yy.c -Wall -g -O0 -o cimples_compiler || { echo "Compilation failed"; exit 1; }
+    \end{lstlisting}
+
+\section{Testes}
+
+    O compilador inclui um script de testes automatizados que verifica a 
+    funcionalidade básica através de casos de teste predefinidos. O script executa 
+    o compilador com diferentes arquivos de entrada e exibe os resultados.
+    \begin{lstlisting}[caption=Arquivo \textit{bash} para os testes,captionpos=b]
+    #!/bin/bash
+
+    echo "TEST 1"
+    ./cimples_compiler < tests/test1.cimples
+
+    echo -e "\nTEST 2"
+    ./cimples_compiler < tests/test2.cimples
+
+    echo -e "\nTEST 3"
+    ./cimples_compiler < tests/test3.cimples
+
+    echo -e "\nTEST 4"
+    ./cimples_compiler < tests/test4.cimples
+
+    echo -e "\nTEST 5"
+    ./cimples_compiler < tests/test5.cimples
+    \end{lstlisting}
+    
+    Os testes implementados são os seguintes:
+    \begin{lstlisting}[caption=Testes implementados,captionpos=b]
+    TESTE 1
+    main() {
+        int x;
+        float y;
+        char z;
+    }
+
+    TESTE 2
+    main() {
+        int num;
+        read(num);
+        write(num);
+    }
+
+    TESTE 3
+    main() {
+        int a;
+        if (a > 0) {
+            write(a);
+        } else {
+            write(0);
+        }
+    }
+
+    TESTE 4
+    main() {
+        int i = 0;
+        while (i < 10) {
+            write(i);
+            i = i + 1;
+        }
+    }
+
+    TESTE 5
+    main() {
+        int i = 0;
+        int j = 5;
+        while (i < 10) {
+            write(i);
+            i = i + j;
+        }
+        read(i);
+    }
+    \end{lstlisting}
+
+    Os resultados obtidos nos scripts de teste são os seguintes
+    \begin{lstlisting}[caption=Resultado dos arquivos teste,captionpos=b]
+    TEST 1
+    === COMPILADOR CIMPLES ===
+    Programa compilado com sucesso!
+
+    === CODIGO INTERMEDIARIO ===
+    0: DECL int  x
+    1: DECL float  y
+    2: DECL char  z
+
+    TEST 2
+    === COMPILADOR CIMPLES ===
+    Programa compilado com sucesso!
+
+    === CODIGO INTERMEDIARIO ===
+    0: DECL int  num
+    1: READ   num
+    2: WRITE num  
+
+    TEST 3
+    === COMPILADOR CIMPLES ===
+    Programa compilado com sucesso!
+
+    === CODIGO INTERMEDIARIO ===
+    0: DECL int  a
+    1: > a 0 t0
+    2: WRITE a  
+    3: WRITE 0  
+    4: IF t0  L0
+    5: GOTO L1  
+    6: LABEL L0  
+    7: LABEL L1  
+
+    TEST 4
+    === COMPILADOR CIMPLES ===
+    Programa compilado com sucesso!
+
+    === CODIGO INTERMEDIARIO ===
+    0: DECL int  i
+    1: = 0  i
+    2: LABEL L0  
+    3: < i 10 t0
+    4: IF_FALSE t0  L1
+    5: WRITE i  
+    6: + i 1 t1
+    7: = t1  i
+    8: GOTO L0  
+    9: LABEL L1  
+
+    TEST 5
+    === COMPILADOR CIMPLES ===
+    Programa compilado com sucesso!
+
+    === CODIGO INTERMEDIARIO ===
+    0: DECL int  i
+    1: = 0  i
+    2: DECL int  j
+    3: = 5  j
+    4: LABEL L0  
+    5: < i 10 t0
+    6: IF_FALSE t0  L1
+    7: WRITE i  
+    8: + i j t1
+    9: = t1  i
+    10: GOTO L0  
+    11: LABEL L1  
+    12: READ   i
+    \end{lstlisting}
+
+\end{document}
