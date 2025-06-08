@@ -1,3 +1,6 @@
+# system files
+.DS_Store
+
 # bison compile files
 /parser.tab.*
 
@@ -15,4 +18,10 @@ cimples_compiler.dSYM/Contents/Resources/DWARF/cimples_compiler
 # Latex files
 artigo-projeto-final/*
 !artigo-projeto-final/proposta.tex
+!artigo-projeto-final/head.tex
 !artigo-projeto-final/style/
+
+proposta-projeto-final/*
+!proposta-projeto-final/proposta.tex
+!proposta-projeto-final/head.tex
+!proposta-projeto-final/style/
