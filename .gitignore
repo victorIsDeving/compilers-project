@@ -17,9 +17,7 @@ cimples_compiler.dSYM/Contents/Resources/DWARF/cimples_compiler
 
 # Latex files
 artigo-projeto-final/*
-!artigo-projeto-final/proposta.tex
-!artigo-projeto-final/head.tex
-!artigo-projeto-final/style/
+!artigo-projeto-final/artigo.tex
 
 proposta-projeto-final/*
 !proposta-projeto-final/proposta.tex
