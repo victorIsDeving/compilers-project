@@ -1,0 +1,9 @@
+main() {
+    int i = 1;
+    int j = 5;
+    do {
+        i = i + j;
+        write(i);
+    } while (i < 10);
+    read(i);
+}

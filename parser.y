@@ -81,7 +81,7 @@ void yyerror(const char* s) {
 %token <fnum> FNUM
 %token <str> CNUM
 %token INT FLOAT CHAR
-%token IF ELSE WHILE
+%token IF ELSE WHILE DO
 %token READ WRITE MAIN
 %token PLUS MINUS MULT DIV ASSIGN
 %token EQ NE LT GT
@@ -90,8 +90,8 @@ void yyerror(const char* s) {
 %type <str> expr term factor
 %type <str> type 
 %type <cond_labels> if_start else_stmt
-%type <loop_labels> while_start_action 
-%type <str> while_stmt 
+%type <loop_labels> while_start_action do_start
+%type <str> while_stmt do_stmt
 
 %left PLUS MINUS
 %left MULT DIV
@@ -117,6 +117,7 @@ stmt:
     | assign_stmt
     | if_stmt
     | while_stmt
+    | do_stmt
     | read_stmt
     | write_stmt
     ;
@@ -188,6 +189,22 @@ while_stmt:
     }
     ;
 while_start_action:
+    {
+        $$.start_loop = new_label();
+        $$.end_loop = new_label();
+        gen_code("LABEL", $$.start_loop, "", "");
+    }
+    ;
+// Segunda estrutura de repetição do-while - conceito B
+do_stmt:
+    DO LBRACE do_start stmt_list RBRACE WHILE LPAREN expr RPAREN SEMICOLON
+    {
+        gen_code("IF_FALSE", $8, "", $3.end_loop);
+        gen_code("GOTO", $3.start_loop, "", "");
+        gen_code("LABEL", $3.end_loop, "", "");
+    }
+    ;
+do_start:
     {
         $$.start_loop = new_label();
         $$.end_loop = new_label();
