@@ -21,6 +21,7 @@ int line_num = 1;
 "char"  { return CHAR; }
 "if"    { return IF; }
 "else"  { return ELSE; }
+"do"    { return DO; }
 "while" { return WHILE; }
 "read"  { return READ; }
 "write" { return WRITE; }

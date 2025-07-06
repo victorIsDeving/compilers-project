@@ -26,12 +26,25 @@ char* new_label() {
     sprintf(label, "L%d", label_count++);
     return label;
 }
-
+char* last_label() {
+    char* label = malloc(10);
+    sprintf(label, "L%d", label_count - 1);
+    return label;
+}
+// Gera código intermediário em 3 endereços - Conceito C
 void gen_code(char* op, char* arg1, char* arg2, char* result) {
     strcpy(code[code_count].op, op);
     strcpy(code[code_count].arg1, arg1 ? arg1 : "");
     strcpy(code[code_count].arg2, arg2 ? arg2 : "");
     strcpy(code[code_count].result, result ? result : "");
+    code_count++;
+}
+void gen_code_2(char* op, char* arg1, char* arg2, char* result) {
+    code[code_count] = code[code_count - 1];
+    strcpy(code[code_count - 1].op, op);
+    strcpy(code[code_count - 1].arg1, arg1 ? arg1 : "");
+    strcpy(code[code_count - 1].arg2, arg2 ? arg2 : "");
+    strcpy(code[code_count - 1].result, result ? result : "");
     code_count++;
 }
 
@@ -54,9 +67,13 @@ void yyerror(const char* s) {
     int num;
     float fnum;
     struct {
-        char* start;
-        char* end;
+        char* start_loop;
+        char* end_loop;
     } loop_labels;
+    struct {
+        char* else_cond;
+        char* end_cond;
+    } cond_labels;
 }
 
 %token <str> ID
@@ -72,6 +89,7 @@ void yyerror(const char* s) {
 
 %type <str> expr term factor
 %type <str> type 
+%type <cond_labels> if_start else_stmt
 %type <loop_labels> while_start_action 
 %type <str> while_stmt 
 
@@ -114,7 +132,7 @@ decl_stmt:
         gen_code("=", $4, "", $2);
     }
     ;
-
+// Definição de 3 tipos de dados - conceito C
 type:
     INT     { $$ = "int"; }
     | FLOAT { $$ = "float"; }
@@ -127,49 +145,60 @@ assign_stmt:
         gen_code("=", $3, "", $1);
     }
     ;
-
+// Estrutura de decisão 
 if_stmt:
-    IF LPAREN expr RPAREN LBRACE stmt_list RBRACE
+// se então - conceito C
+    IF if_start LPAREN expr RPAREN LBRACE // se 
     {
-        char* label = new_label();
-        gen_code("IF", $3, "", label);
-        gen_code("LABEL", label, "", "");
+        gen_code("IF_FALSE", $4, "", $2.else_cond);
     }
-    | IF LPAREN expr RPAREN LBRACE stmt_list RBRACE ELSE LBRACE stmt_list RBRACE
+    stmt_list RBRACE // então
     {
-        char* label1 = new_label();
-        char* label2 = new_label();
-        gen_code("IF", $3, "", label1);
-        gen_code("GOTO", label2, "", "");
-        gen_code("LABEL", label1, "", "");
-        gen_code("LABEL", label2, "", "");
+        gen_code("LABEL", $2.else_cond, "", "");
     }
+    else_stmt
     ;
-
-while_stmt:
-    WHILE LPAREN while_start_action expr RPAREN LBRACE 
+if_start:
     {
-        gen_code("IF_FALSE", $4, "", $3.end);
+        $$.else_cond = new_label();
+    }
+else_stmt: // se não - conceito B
+    {}
+    |
+    ELSE LBRACE
+    {
+        $$.end_cond = new_label();
+        gen_code_2("GOTO", $$.end_cond, "", "");
     }
     stmt_list RBRACE
     {
-        gen_code("GOTO", $3.start, "", ""); 
-        gen_code("LABEL", $3.end, "", "");
+        gen_code("LABEL", last_label(), "", "");
     }
     ;
-
+// Estrutura de repetição - conceito C
+while_stmt:
+    WHILE LPAREN while_start_action expr RPAREN LBRACE 
+    {
+        gen_code("IF_FALSE", $4, "", $3.end_loop);
+    }
+    stmt_list RBRACE
+    {
+        gen_code("GOTO", $3.start_loop, "", ""); 
+        gen_code("LABEL", $3.end_loop, "", "");
+    }
+    ;
 while_start_action:
     {
-        $$.start = new_label();
-        $$.end = new_label();
-        gen_code("LABEL", $$.start, "", "");
+        $$.start_loop = new_label();
+        $$.end_loop = new_label();
+        gen_code("LABEL", $$.start_loop, "", "");
     }
     ;
-
+// Comandos de leitura e escrita - conceito C
 read_stmt:
     READ LPAREN ID RPAREN SEMICOLON
     {
-        gen_code("READ", "", "", $3);
+        gen_code("READ", $3, "", "");
     }
     ;
 
