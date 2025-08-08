@@ -40,6 +40,9 @@ int line_num = 1;
 ")"     { return RPAREN; }
 "{"     { return LBRACE; }
 "}"     { return RBRACE; }
+"["     { return LBRACKET; }
+"]"     { return RBRACKET; }
+","     { return COMMA; }
 
 [a-zA-Z][a-zA-Z0-9]* { 
     yylval.str = strdup(yytext); 

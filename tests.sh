@@ -20,3 +20,6 @@ echo -e "\nTEST 6"
 
 echo -e "\nTEST 7"
 ./cimples_compiler < tests/test7.cimples
+
+echo -e "\nTEST 8"
+./cimples_compiler < tests/test8.cimples

@@ -85,10 +85,10 @@ void yyerror(const char* s) {
 %token READ WRITE MAIN
 %token PLUS MINUS MULT DIV ASSIGN
 %token EQ NE LT GT
-%token SEMICOLON LPAREN RPAREN LBRACE RBRACE
+%token SEMICOLON LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA
 
 %type <str> expr term factor
-%type <str> type 
+%type <str> type array
 %type <cond_labels> if_start else_stmt
 %type <loop_labels> while_start_action do_start
 %type <str> while_stmt do_stmt
@@ -132,6 +132,31 @@ decl_stmt:
         gen_code("DECL", $1, "", $2);
         gen_code("=", $4, "", $2);
     }
+    // conceito B - arrays
+    | type ID LBRACKET NUM RBRACKET SEMICOLON //declaração
+    {
+        char size_str[20];
+        sprintf(size_str, "%d", $4);
+        gen_code("ARR_DECL", $1, size_str, $2);
+    }
+    | type ID LBRACKET NUM RBRACKET ASSIGN LBRACE init_arr RBRACE SEMICOLON //declaração com inicialização
+    {
+        char size_str[20];
+        sprintf(size_str,"%d",$4);
+        gen_code("ARR_DECL", $1, size_str, $2);
+        gen_code("ARR_INIT", $2, "", "");
+    }
+    ;
+// conceito B - arrays
+init_arr:
+    init_arr COMMA expr
+    {
+        gen_code("arr_elem",$3,"","");
+    }
+    | expr
+    {
+        gen_code("arr_elem",$1,"","");
+    }
     ;
 // Definição de 3 tipos de dados - conceito C
 type:
@@ -145,10 +170,25 @@ assign_stmt:
     {
         gen_code("=", $3, "", $1);
     }
+    | ID ASSIGN LBRACE init_arr RBRACE SEMICOLON //conceito B - arrays
+    {
+        gen_code("arr_init", $1, "", "");
+    }
+    | array ASSIGN expr SEMICOLON
+    {
+        gen_code("=",$3,"",$1);
+    }
     ;
+//conceito B arrays
+array:
+    ID LBRACKET expr RBRACKET
+    {
+        $$ = new_temp();
+        gen_code("array", $1, $3, $$);
+    }
 // Estrutura de decisão 
 if_stmt:
-// se então - conceito C
+// se - conceito C
     IF if_start LPAREN expr RPAREN LBRACE // se 
     {
         gen_code("IF_FALSE", $4, "", $2.else_cond);
@@ -252,6 +292,7 @@ term:
 
 factor:
     ID { $$ = $1; }
+    | array { $$ = $1; }
     | NUM   
     { 
         $$ = malloc(10);
@@ -264,6 +305,7 @@ factor:
     }
     | CNUM  { $$ = $1; }
     | LPAREN expr RPAREN { $$ = $2; }
+    | 
     ;
 
 %%
