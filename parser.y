@@ -15,6 +15,8 @@ int code_count = 0;
 int temp_count = 0;
 int label_count = 0;
 
+char current_array[20];
+
 char* new_temp() {
     char* temp = malloc(10);
     sprintf(temp, "t%d", temp_count++);
@@ -88,7 +90,7 @@ void yyerror(const char* s) {
 %token SEMICOLON LPAREN RPAREN LBRACE RBRACE LBRACKET RBRACKET COMMA
 
 %type <str> expr term factor
-%type <str> type array
+%type <str> type
 %type <cond_labels> if_start else_stmt
 %type <loop_labels> while_start_action do_start
 %type <str> while_stmt do_stmt
@@ -139,23 +141,25 @@ decl_stmt:
         sprintf(size_str, "%d", $4);
         gen_code("ARR_DECL", $1, size_str, $2);
     }
-    | type ID LBRACKET NUM RBRACKET ASSIGN LBRACE init_arr RBRACE SEMICOLON //declaração com inicialização
+    | type ID LBRACKET NUM RBRACKET ASSIGN LBRACE  //declaração com inicialização
     {
         char size_str[20];
         sprintf(size_str,"%d",$4);
         gen_code("ARR_DECL", $1, size_str, $2);
         gen_code("ARR_INIT", $2, "", "");
+        strcpy(current_array, $2);
     }
+    init_arr RBRACE SEMICOLON
     ;
 // conceito B - arrays
 init_arr:
     init_arr COMMA expr
     {
-        gen_code("arr_elem",$3,"","");
+        gen_code("add_elem",$3,current_array,"");
     }
     | expr
     {
-        gen_code("arr_elem",$1,"","");
+        gen_code("add_elem",$1,current_array,"");
     }
     ;
 // Definição de 3 tipos de dados - conceito C
@@ -170,22 +174,13 @@ assign_stmt:
     {
         gen_code("=", $3, "", $1);
     }
-    | ID ASSIGN LBRACE init_arr RBRACE SEMICOLON //conceito B - arrays
+    | ID ASSIGN LBRACE  //conceito B - arrays
     {
-        gen_code("arr_init", $1, "", "");
+        gen_code("ARR_INIT", $1, "", "");
+        strcpy(current_array, $1);
     }
-    | array ASSIGN expr SEMICOLON
-    {
-        gen_code("=",$3,"",$1);
-    }
+    init_arr RBRACE SEMICOLON
     ;
-//conceito B arrays
-array:
-    ID LBRACKET expr RBRACKET
-    {
-        $$ = new_temp();
-        gen_code("array", $1, $3, $$);
-    }
 // Estrutura de decisão 
 if_stmt:
 // se - conceito C
@@ -292,7 +287,6 @@ term:
 
 factor:
     ID { $$ = $1; }
-    | array { $$ = $1; }
     | NUM   
     { 
         $$ = malloc(10);
