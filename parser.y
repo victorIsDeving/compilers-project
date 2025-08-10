@@ -18,7 +18,7 @@ int label_count = 0;
 
 #define MAX_VARS 100
 
-//conceito B - analisador semântico
+//conceito B - analisador semântico - analisador de tipos
 typedef enum {
     VAR_SIMPLE, 
     VAR_ARRAY
