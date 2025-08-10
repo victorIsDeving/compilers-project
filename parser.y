@@ -74,9 +74,10 @@ bool add_var(const char* name, const char* type) {
     return true;
 }
 
-bool add_array_var(const char* name, const char* type, int size) {
+bool add_arr(const char* name, const char* type, int size) {
     if (!find_symbol(name)) {
         printf("ERRO: Variável '%s' já existe\n", name);
+        printf("201\n");
         return false;
     }
     
@@ -110,35 +111,6 @@ bool add_array_var(const char* name, const char* type, int size) {
 
 bool is_declared(const char* name) {
     return find_symbol(name) != NULL;
-}
-
-bool is_type_compatible(const char* left_type, const char* right_type) {
-    if (strcmp(left_type, right_type) == 0) {
-        return true;
-    }
-    
-    return false;
-}
-
-bool is_valid_array_index(const char* array_name, int index) {
-    Symbol* sym = find_symbol(array_name);
-    if (!sym) {
-        printf("ERRO: Array '%s' não foi declarado!\n", array_name);
-        return false;
-    }
-    
-    if (sym->var_type != VAR_ARRAY) {
-        printf("ERRO: '%s' não é um array!\n", array_name);
-        return false;
-    }
-    
-    if (index < 0 || index >= sym->array_size) {
-        printf("ERRO: Índice %d fora dos limites do array '%s' (tamanho: %d)!\n", 
-               index, array_name, sym->array_size);
-        return false;
-    }
-    
-    return true;
 }
 
 char current_array[20];
@@ -257,6 +229,7 @@ decl_stmt:
         if(add_var($2, $1)) {
             gen_code("DECL", $1, "", $2);
         } else {
+            printf("101\n");
             YYERROR;
         }
     }
@@ -266,23 +239,34 @@ decl_stmt:
             gen_code("DECL", $1, "", $2);
             gen_code("=", $4, "", $2);
         } else {
+            printf("102\n");
             YYERROR;
         }
     }
     // conceito B - arrays
     | type ID LBRACKET NUM RBRACKET SEMICOLON //declaração
     {
-        char size_str[20];
-        sprintf(size_str, "%d", $4);
-        gen_code("ARR_DECL", $1, size_str, $2);
+        if (add_arr($2,$1,$4)) {
+            char size_str[20];
+            sprintf(size_str, "%d", $4);
+            gen_code("ARR_DECL", $1, size_str, $2);
+        } else {
+            printf("103\n");
+            YYERROR;
+        }
     }
     | type ID LBRACKET NUM RBRACKET ASSIGN LBRACE  //declaração com inicialização
     {
-        char size_str[20];
-        sprintf(size_str,"%d",$4);
-        gen_code("ARR_DECL", $1, size_str, $2);
-        gen_code("ARR_INIT", $2, "", "");
-        strcpy(current_array, $2);
+        if (add_arr($2, $1, $4) && is_declared($2)) {
+            char size_str[20];
+            sprintf(size_str, "%d", $4);
+            gen_code("ARR_DECL", $1, size_str, $2);
+            gen_code("ARR_INIT", $2, "", "");
+            strcpy(current_array, $2);
+        } else {
+            printf("104\n");
+            YYERROR;
+        }
     }
     init_arr RBRACE SEMICOLON
     ;
@@ -311,8 +295,19 @@ assign_stmt:
     }
     | ID ASSIGN LBRACE  //conceito B - arrays
     {
-        gen_code("ARR_INIT", $1, "", "");
-        strcpy(current_array, $1);
+        if (!is_declared($1)) {
+            printf("Variável '%s' não declarada\n", $1);
+            YYERROR;
+        } else {
+            Symbol* sym = find_symbol($1);
+            if (sym->var_type != VAR_ARRAY) {
+                printf("'%s' não é array\n", $1);
+                YYERROR;
+            } else {
+                gen_code("ARR_INIT", $1, "", "");
+                strcpy(current_array, $1);
+            }
+        }
     }
     init_arr RBRACE SEMICOLON
     ;
